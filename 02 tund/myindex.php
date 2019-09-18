@@ -4,9 +4,20 @@
   $hourNow = date("H");
   $partOfDay = "hägune aeg";
   
-  if($hourNow < 8){
-	$partOfDay = "hommik";  
-  }
+  {if($hourNow < 10 and $hourNow > 6)
+    $partOfDay = "on hommik";
+  if($hourNow == 12)
+    $partOfDay = "on keskpäev";
+  if($hourNow > 10 and $hourNow < 12)
+    $partOfDay = "on ennelõuna";
+  if($hourNow > 12 and $hourNow < 18)
+	$partOfDay = "on pärastlõuna";
+  if($hourNow >= 18 and $hourNow < 24)
+	$partOfDay = "on õhtu";
+  if($hourNow == 24)
+	$partOfDay = "on kesköö"; 
+  if($hourNow < 6)
+	$partOfDay = "on öö";}
 ?>
 <!DOCTYPE html>
 <html lang="et">
@@ -23,7 +34,7 @@
     echo "<h1>" .$userName .", veebiprogrammeerimine 2019</h1>"; 
   ?>
   <p> See veebileht on valminud õppetöö käigus ning ei sisalda mingisugust tõsiseltvõetavat sisu!</p>
-  <p> See siin on lõik, mis lisasin esimese kodutööna. </p>
+  <p> See siin on teine lõik sellel veebilehel. </p>
 <?php
   echo "<p>See on minu esimene PHP!</p>";
   echo "<p>Lehe avamise hetkel oli " .$fullTimeNow .", " .$partOfDay .".</p>";
