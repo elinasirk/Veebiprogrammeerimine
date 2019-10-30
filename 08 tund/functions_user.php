@@ -2,7 +2,7 @@
 
 //sessiooni kasutamise algatamine
 session_start();
-var_dump($_SESSION);
+//var_dump($_SESSION);
 
 
 function signUp($name, $surname, $email, $gender, $birthDate, $password){
@@ -153,5 +153,4 @@ function signIn($email, $password){
 	$conn->close();
 	return $notice;
   }
-
 
