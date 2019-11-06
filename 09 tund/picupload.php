@@ -4,6 +4,8 @@
   require("functions_main.php");
   require("functions_user.php");
   require("functions_pic.php");
+  //require("classes/Test.class.php");
+  require("classes/Picupload.class.php");
   $database = "if19_elina_si_1";
   
    //kui pole sisseloginud
@@ -19,6 +21,13 @@
 	  header("Location: myindex.php");
 	  exit();
   }
+  
+  /* $myTest = new Test(123);
+  //echo $myTest->secretNumber; 
+  echo " Teada: " .$myTest->knownNumber;
+  $myTest->multiplyNumbers();
+  unset($myTest);
+  echo " Teada: " .$myTest->knownNumber; */
   
   $userName = $_SESSION["userFirstname"] ." " .$_SESSION["userLastname"];
   
@@ -69,34 +78,25 @@ if ($uploadOk == 0) {
     echo "Sorry, your file was not uploaded.";
 // if everything is ok, try to upload file
 } else {
-	// muudan pildi suurust
-	//loon "pildiobjekti" - image
-	$myTempImage = makeImage($_FILES["fileToUpload"]["tmp_name"], $imageFileType);
-	//teeme kindlaks pildi suuruse
-	$picW = imagesx($myTempImage);
-	$picH = imagesy($myTempImage);
-	//kui pilt ületab maks väärtuse siis muudame suurust
-	if($picW > $maxPicW or $picH > $maxPicH){
-		if($picW / $maxPicW > $picH / $maxPicH){
-			$picSizeRatio = $picW / $maxPicW;
-		} else {
-			$picSizeRatio = $picH / $maxPicH;
-			$myNewImage = setPicSize($myTempImage, $picSizeRatio);
-			// salvestame vähendatud kujutise faili
-			$notice = saveImage($myNewImage, $pic_upload_dir_w600 .$fileName, $imageFileType);
-		
-			imagedestroy($myTempImage);
-			imagedestroy($myNewImage);
-		}
-		}
-
 	
+			//kasutan klasssi
+			$myPic = new Picupload($_FILES["fileToUpload"]["tmp_name"], $imageFileType);	
+			// muudan pildi suurust
+			$myPic->resizeImage($maxPicW, $maxPicH);
+			//lisan vesimärgi
+			$myPic->addWatermark("../vp_pics/vp_logo_w100_overlay.png");
+			// salvestame vähendatud kujutise faili
+			$notice = $myPic->saveImage($pic_upload_dir_w600 .$fileName); unset($myPic);
+		
 	// kopeerime orginaalfaili
     if (move_uploaded_file($_FILES["fileToUpload"]["tmp_name"], $target_file)) {
         echo "The file ". basename( $_FILES["fileToUpload"]["name"]). " has been uploaded.";
     } else {
         echo "Sorry, there was an error uploading your file.";
     }
+
+	//salvestan info andmebaasi
+	$notice .= addPicData($fileName, test_input($_POST["altText"]), $_POST["privacy"]);
 }
 } //kas vajutati nuppu
 
@@ -113,13 +113,21 @@ if ($uploadOk == 0) {
   <hr>
   <p><a href="?logout=1">Logi välja!</a>
   
-<form method="POST" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>" enctype="multipart/form-data">
+  <form method="POST" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>" enctype="multipart/form-data">
 	  <label>Vali pilt</label><br>
 	  <input type="file" name="fileToUpload" id="fileToUpload">
 	  <br>
-	  <input name="submitPic" type="submit" value="Lae pilt üles!"><span><?php echo $notice; ?></span>
+	  <label>Alt tekst: </label><input type="text" name="altText">
+	  <br>
+	  <label>Privaatsus</label>
+	  <br>
+	  <input type="radio" name="privacy" value="1"><label>Avalik</label>&nbsp;
+	  <input type="radio" name="privacy" value="2"><label>Sisseloginud kasutajatele</label>&nbsp;
+	  <input type="radio" name="privacy" value="3" checked><label>Isiklik</label>
+      <br>
+	  <input name="submitPic" type="submit" value="Lae pilt üles"><span><?php echo $notice; ?></span>
 	</form>
 	<hr>
 
 </body>
-</html>
+</html> 
