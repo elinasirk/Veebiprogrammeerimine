@@ -37,69 +37,58 @@
   
  // $target_dir = "uploads/";
 
-  $uploadOk = 1;
+
+  $fileSizeLimit = 2500000;
   $maxPicW = 600;
   $maxPicH = 400;
-
-// Check if image file is a actual image or fake image
-
+  $fileNamePrefix = "vp_";
+  $waterMarkFile = "../vp_pics/vp_logo_w100_overlay.png";
+  $waterMarkLocation = mt_rand(1,4); //1- ülal vasakul, 2 - ülal paremal, 3 - all paremal, 4 - all vasakul, 5 - keskel
+  $waterMarkFromEdge = 10;
+  $thumbW = 100;
+  $thumbH = 100;
+  
+	// Check if image file is a actual image or fake image
 	if(isset($_POST["submitPic"])) {
-		$fileName = "vp_";
-		$imageFileType = strtolower(pathinfo($_FILES["fileToUpload"]["name"],PATHINFO_EXTENSION));
-		$timeStamp = microtime(1) * 10000;
-		$fileName .= $timeStamp ." ." .$imageFileType;
-		$target_file = $pic_upload_dir_orig . $fileName;
-		$check = getimagesize($_FILES["fileToUpload"]["tmp_name"]);
-		if($check !== false) {
-			echo "File is an image - " . $check["mime"] . ".";
-			$uploadOk = 1;
-		} else {
-			echo "File is not an image.";
+		// Check if file already exists
+		/*if (file_exists($target_file)) {
+			echo "Sorry, file already exists.";
 			$uploadOk = 0;
-		}
-// Check if file already exists
-if (file_exists($target_file)) {
-    echo "Sorry, file already exists.";
-    $uploadOk = 0;
-}
-// Check file size
-if ($_FILES["fileToUpload"]["size"] > 2500000) {
-    echo "Sorry, your file is too large.";
-    $uploadOk = 0;
-}
-// Allow certain file formats
-if($imageFileType != "jpg" && $imageFileType != "png" && $imageFileType != "jpeg"
-&& $imageFileType != "gif" ) {
-    echo "Sorry, only JPG, JPEG, PNG & GIF files are allowed.";
-    $uploadOk = 0;
-}
-// Check if $uploadOk is set to 0 by an error
-if ($uploadOk == 0) {
-    echo "Sorry, your file was not uploaded.";
-// if everything is ok, try to upload file
-} else {
-	
-			//kasutan klasssi
-			$myPic = new Picupload($_FILES["fileToUpload"]["tmp_name"], $imageFileType);	
-			// muudan pildi suurust
-			$myPic->resizeImage($maxPicW, $maxPicH);
-			//lisan vesimärgi
-			$myPic->addWatermark("../vp_pics/vp_logo_w100_overlay.png");
-			// salvestame vähendatud kujutise faili
-			$notice = $myPic->saveImage($pic_upload_dir_w600 .$fileName); unset($myPic);
+		}*/
 		
-	// kopeerime orginaalfaili
-    if (move_uploaded_file($_FILES["fileToUpload"]["tmp_name"], $target_file)) {
-        echo "The file ". basename( $_FILES["fileToUpload"]["name"]). " has been uploaded.";
-    } else {
-        echo "Sorry, there was an error uploading your file.";
-    }
-
-	//salvestan info andmebaasi
-	$notice .= addPicData($fileName, test_input($_POST["altText"]), $_POST["privacy"]);
-}
-} //kas vajutati nuppu
-
+		//kasutame klassi (saadame kogu info üleslaetava faili kohta ja faili mahu piiri
+		$myPic = new Picupload($_FILES["fileToUpload"], $fileSizeLimit);
+		if($myPic->error == null){
+			//loome failinime
+			$myPic->createFileName($fileNamePrefix);
+			//teeme pildi väiksemaks
+			$myPic->resizeImage($maxPicW, $maxPicH);
+			//lisame vesimärgi
+			$myPic->addWatermark($waterMarkFile, $waterMarkLocation, $waterMarkFromEdge);
+			//kirjutame vähendatud pildi faili
+			$notice .= $myPic->savePicFile($pic_upload_dir_w600 .$myPic->fileName);
+			//thumbnail
+			$myPic->resizeImage($thumbW, $thumbH);
+			$myPic->savePicFile($pic_upload_dir_thumb .$myPic->fileName);
+			//salvestan originaali
+			$notice .= " " .$myPic->saveOriginal($pic_upload_dir_orig .$myPic->fileName);
+						
+			//salvestan info andmebaasi
+			$notice .= addPicData($myPic->fileName, test_input($_POST["altText"]), $_POST["privacy"]);
+		} else {
+			//1 - pole pildifail, 2 - liiga suur, pole lubatud tüüp
+			if($myPic->error == 1){
+				$notice = "Üleslaadimiseks valitud fail pole pilt!";
+			}
+			if($myPic->error == 2){
+				$notice = "Üleslaadimiseks valitud fail on liiga suure failimahuga!";
+			}
+			if($myPic->error == 3){
+				$notice = "Üleslaadimiseks valitud fail pole lubatud tüüpi (lubatakse vaid jpg, png ja gif)!";
+			}
+		}
+		unset($myPic);
+	}//kas nuppu klikiti
 
   require("header.php");
 ?>
